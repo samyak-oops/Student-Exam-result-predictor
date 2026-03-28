@@ -4,6 +4,7 @@ seaborn
 matplotlib
 scikit-learn
 catboost
-catboost
+xgboost
+dill
 #-e .
 # pip install -r requirements.txt
