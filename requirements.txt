@@ -3,4 +3,7 @@ numpy
 seaborn
 matplotlib
 scikit-learn
--e .
+catboost
+catboost
+#-e .
+# pip install -r requirements.txt
