@@ -34,12 +34,14 @@ class ModelTrainer:
     def initiate_model_trainer(self, train_array, test_array):
         try:
             logging.info("Splitting training and test input data")
-            X_train, y_train, X_test, y_test = ( #stores the split data into X_train, y_train, X_test, y_test
+
+            X_train, y_train, X_test, y_test = (
                 train_array[:, :-1],
                 train_array[:, -1],
                 test_array[:, :-1],
                 test_array[:, -1],
             )
+
             models = {
                 "Random Forest": RandomForestRegressor(),
                 "Decision Tree": DecisionTreeRegressor(),
@@ -52,15 +54,69 @@ class ModelTrainer:
                 "CatBoosting Regressor": CatBoostRegressor(verbose=False),
                 "AdaBoost Regressor": AdaBoostRegressor(),
             }
-            model_report: dict = evaluate_models(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test, models=models)
-            best_model_score = max(sorted(model_report.values())) ##finds the best score among the models
-            best_model_name = list(model_report.keys())[ ##finds the name of the best model using the index of the best score
+
+            ## Hyperparameters for RandomizedSearchCV
+            params = {
+                "Decision Tree": {
+                    'criterion': ['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
+                },
+                "Random Forest": {
+                    'n_estimators': [8, 16, 32, 64, 128, 256]
+                },
+                "K-Neighbors Regressor": {
+                    'n_neighbors': [5, 7, 9, 11]
+                },
+                "Linear Regression": {},
+                "Ridge Regression": {
+                    'alpha': [0.1, 1.0, 10.0, 100.0]
+                },
+                "Lasso Regression": {
+                    'alpha': [0.1, 1.0, 10.0, 100.0]
+                },
+                "Support Vector Regressor": {
+                    'kernel': ['linear', 'rbf', 'poly'],
+                    'C': [0.1, 1, 10, 100],
+                    'gamma': ['scale', 'auto']
+                },
+                "XGBRegressor": {
+                    'learning_rate': [0.01, 0.1, 0.2],
+                    'max_depth': [3, 5, 7],
+                    'n_estimators': [100, 200, 300]
+                },
+                "CatBoosting Regressor": {
+                    'iterations': [100, 200, 300],
+                    'learning_rate': [0.01, 0.1, 0.2],
+                    'depth': [3, 5, 7]
+                },
+                "AdaBoost Regressor": {
+                    'n_estimators': [50, 100, 200],
+                    'learning_rate': [0.01, 0.1, 0.2]
+                }
+            }
+
+            # Evaluate all models and get the best one
+            model_report, best_models = evaluate_models(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                models=models,
+                params=params
+            )
+
+            best_model_score = max(model_report.values())
+            best_model_name = list(model_report.keys())[
                 list(model_report.values()).index(best_model_score)
             ]
-            best_model = models[best_model_name]
+
+            #  Get the best model object
+            best_model = best_models[best_model_name]
+
             if best_model_score < 0.6:
-                raise CustomException("No best model found")
-            logging.info(f"Best found model on both training and testing dataset is {best_model_name} with r2 score: {best_model_score}")
+                raise CustomException("No good model found")
+
+            logging.info(f"Best model: {best_model_name}, R2 Score: {best_model_score}")
+
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
                 obj=best_model
@@ -68,9 +124,8 @@ class ModelTrainer:
 
             predicted = best_model.predict(X_test)
             r2_square = r2_score(y_test, predicted)
-            logging.info(f"R2 Score of the best model: {r2_square}")
+
             return r2_square
-        
 
         except Exception as e:
             raise CustomException(e, sys)
