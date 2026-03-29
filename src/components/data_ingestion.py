@@ -8,17 +8,18 @@ from sklearn.model_selection import train_test_split
 from dataclasses import dataclass
 
 from src.components.data_transformation import DataTransformation
-
+from src.components.model_trainer import ModelTrainer
+from src.components.model_trainer import ModelTrainerConfig
 
 @dataclass
-class DataIngestionConfig:
+class DataIngestionConfig: #stores file path
     train_data_path: str = os.path.join('artifacts', "train.csv")
     test_data_path: str = os.path.join('artifacts', "test.csv")
     raw_data_path: str = os.path.join('artifacts', "data.csv")
 
 
 class DataIngestion:
-    def __init__(self):
+    def __init__(self): #creates an object
         self.ingestion_config = DataIngestionConfig()
 
     def initiate_data_ingestion(self):
@@ -35,7 +36,7 @@ class DataIngestion:
 
             logging.info("Splitting dataset")
 
-            train_set, test_set = train_test_split(df, test_size=0.2, random_state=42)
+            train_set, test_set = train_test_split(df, test_size=0.2, random_state=42) 
 
             train_set.to_csv(self.ingestion_config.train_data_path, index=False, header=True)
             test_set.to_csv(self.ingestion_config.test_data_path, index=False, header=True)
@@ -51,9 +52,12 @@ class DataIngestion:
             raise CustomException(e, sys)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # runs only when file is executed directly
     obj = DataIngestion()
     train_data, test_data = obj.initiate_data_ingestion()
-
+    ##Data Transformation is Done after Data Ingestion and before Model Training
     data_transformation = DataTransformation()
-    data_transformation.initiate_data_transformation(train_data, test_data)
+    train_arr,test_arr,_ = data_transformation.initiate_data_transformation(train_data, test_data)
+    ##Model Training is Done after Data Ingestion and Data Transformation
+    model_trainer = ModelTrainer()
+    print(model_trainer.initiate_model_trainer(train_arr, test_arr))
